@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from fastapi.security import OAuth2PasswordBearer
+import uuid
 
 from app.config import settings
 from app.models.users import User

@@ -1,11 +1,8 @@
 from pydantic_settings import BaseSettings
+from app.secrets_loader import get_database_url, get_google_client_id
 
 class Settings(BaseSettings):
-    DATABASE_URL: str
-    GOOGLE_CLIENT_ID: str
-
-    class Config:
-        env_file = ".env"
-        extra = "allow"
+    DATABASE_URL: str = get_database_url()
+    GOOGLE_CLIENT_ID: str = get_google_client_id()
 
 settings = Settings()
