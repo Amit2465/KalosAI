@@ -18,8 +18,8 @@ jobs:
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_KEY }}  # ✅ Use a descriptive secret name
-        port: 22                          # Optional, default is 22
+        key: ${{ secrets.EC2_KEY }}  
+        port: 22                          
         script: |
           cd ${{ secrets.PROJECT_PATH }}
           git pull origin main
