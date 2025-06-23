@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Body
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from fastapi.security import OAuth2PasswordBearer
-import uuid
+import logging
 
 from app.config import settings
 from app.models.users import User
@@ -13,6 +13,8 @@ from app.db.session import get_db
 router = APIRouter(prefix="/v1/auth")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+logger = logging.getLogger(__name__)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
@@ -29,8 +31,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         )
 
 @router.post("/google", response_model=UserOut)
-async def google_auth(token: str, db: Session = Depends(get_db)):
+async def google_auth(body: dict = Body(...), db: Session = Depends(get_db)):
+    token = body.get("token")
+    if not token:
+        logger.warning("Google auth attempt with missing token.")
+        raise HTTPException(status_code=400, detail="Token is required")
     try:
+        logger.info("Attempting Google token verification.")
         idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
         sub = idinfo["sub"]
         email = idinfo["email"]
@@ -50,9 +57,13 @@ async def google_auth(token: str, db: Session = Depends(get_db)):
             db.add(user)
             db.commit()
             db.refresh(user)
+            logger.info(f"Created new user: {email}")
+        else:
+            logger.info(f"User already exists: {email}")
         return user
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid Google token")
+    except ValueError as e:
+        logger.error(f"Google token verification failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid Google token: {str(e)}")
     
 
 @router.patch("/username", response_model=UserOut)
